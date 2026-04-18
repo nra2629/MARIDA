@@ -10,10 +10,10 @@ This project builds an end-to-end deep learning pipeline to automatically detect
 and 14 other ocean surface features** from multispectral satellite images captured by the
 European Space Agency's Sentinel-2 satellite.
 
-**This is an unstructured image data project** using PyTorch deep learning on real satellite imagery.
+**Unstructured image data** processed with **PyTorch deep learning** — no CSV or tabular data.
 
 ### What the model does
-Given a 256×256 pixel satellite patch with 11 spectral bands, the model predicts which
+Given a 256×256 pixel satellite patch with 11 spectral bands, the CNN predicts which
 of 15 ocean surface classes are present (multi-label classification):
 
 | Class | Class |
@@ -32,24 +32,19 @@ of 15 ocean surface classes are present (multi-label classification):
 ## Project Structure
 
 ```
-MARIDA/
+marida_1/
 ├── MARIDA_Project.ipynb   ← Main notebook (fully self-contained)
 ├── README.md              ← This file
 ├── environment.yml        ← Conda environment (recommended)
 ├── requirements.txt       ← Pip requirements (alternative)
-└── data/
-    └── patches/
-        ├── labels_mapping.txt
-        ├── train_X.txt
-        ├── val_X.txt
-        ├── test_X.txt
-        ├── S2_<tile-id>.tif         (11-band image)
-        ├── S2_<tile-id>_cl.tif      (classification mask)
-        └── S2_<tile-id>_conf.tif    (confidence mask)
+└── outputs/
+    └── cnn/
+        ├── best_model.pt  ← Saved CNN checkpoint
+        └── history.json   ← Training history
 ```
 
-**The notebook is fully self-contained** — all code is inside `MARIDA_Project.ipynb`.
-No additional `.py` files are required.
+> **Note on data:** The dataset files (TIF images) are large (~10GB) and are **not included**
+> in this repository. See the Data Setup section below to download them.
 
 ---
 
@@ -66,52 +61,56 @@ jupyter notebook
 ### Option B — Pip
 
 ```bash
-python -m venv marida_env
-source marida_env/bin/activate        # Mac/Linux
-# marida_env\Scripts\activate         # Windows
-
 pip install -r requirements.txt
 jupyter notebook
 ```
 
-### Verify setup
-Open a Python terminal and run:
+### Verify PyTorch and device
 ```python
 import torch
 print(torch.__version__)
-print(torch.backends.mps.is_available())  # Should be True on Apple Silicon
+print(torch.backends.mps.is_available())  # True on Apple Silicon Mac
+```
+
+---
+
+## Data Setup
+
+The MARIDA dataset is publicly available here:
+**https://zenodo.org/record/5823383**
+
+After downloading, the data folder structure looks like this:
+```
+data/patches/
+├── labels_mapping.txt          ← JSON: image filename → 15-class label
+├── train_X.txt                 ← list of training tile IDs
+├── val_X.txt
+├── test_X.txt
+└── S2_<scene>/
+    ├── S2_<tile-id>.tif        ← 11-band GeoTIFF image (256×256)
+    ├── S2_<tile-id>_cl.tif     ← classification mask
+    └── S2_<tile-id>_conf.tif   ← confidence mask
+```
+
+> **Important:** The TIF files are organised in subfolders per scene
+> (e.g. `S2_27-1-19_16PCC/S2_27-1-19_16PCC_29.tif`).
+> The notebook handles this automatically using the find_tif() helper.
+
+Once downloaded, update the DATA variable in Cell 0 of the notebook:
+```python
+DATA = "/path/to/your/data/patches"
 ```
 
 ---
 
 ## Running the Analysis
 
-1. Clone or download this repository
+1. Clone this repository
 2. Set up the environment (see above)
-3. Place your data files in `data/patches/` (see Data Setup below)
+3. Download the data from Zenodo and update the DATA path in Cell 0
 4. Launch Jupyter: `jupyter notebook`
 5. Open `MARIDA_Project.ipynb`
-6. Run cells **top to bottom** with Shift+Enter
-
-Each cell prints its own output immediately. You do not need to run the entire
-notebook at once — you can stop and resume at any cell.
-
----
-
-## Data Setup
-
-The MARIDA dataset is publicly available at:
-**https://zenodo.org/record/5823383**
-
-After downloading, place files in `data/patches/`:
-```
-data/patches/
-├── labels_mapping.txt     (JSON: filename → 15-class multi-hot label)
-├── train_X.txt            (list of training tile IDs)
-├── val_X.txt
-├── test_X.txt
-└── S2_*.tif               (GeoTIFF image patches)
-```
+6. Run cells top to bottom with Shift+Enter
 
 ---
 
@@ -120,71 +119,64 @@ data/patches/
 | Section | Description |
 |---------|-------------|
 | 0. Setup | Imports, device selection (MPS/CUDA/CPU) |
-| 1. Dataset Description | MARIDA overview, class list |
-| 2. Custom Dataset | PyTorch Dataset class with normalisation |
-| 3. Augmentation | Band-agnostic transforms |
-| 4. Load Data | Train/val/test split loading |
-| 5. EDA | Class frequency, sample tiles, spectral profiles |
-| 6. Model Architectures | MLP baseline + residual CNN |
-| 7. Training Setup | Loss, optimiser, LR schedule, early stopping |
-| 8. Train MLP | Baseline training + learning curves |
-| 9. Train CNN | Main model training + learning curves |
-| 10. Evaluation | Test set metrics: F1, mAP, per-class AP |
-| 11. MLP vs CNN | Head-to-head comparison |
-| 12. GradCAM | Spatial attention heatmaps |
-| 13. SHAP | Spectral band importance |
-| 14. Discussion | Results, limitations, conclusions |
+| 1. Dataset Description | MARIDA overview, 15 class names |
+| 2. File Finder | Locates TIF files in subfolders |
+| 3. Custom Dataset | PyTorch Dataset with normalisation |
+| 4. Augmentation | Band-agnostic transforms |
+| 5. Load Data | Train/val/test splits |
+| 6. EDA | Class frequency, sample tiles, spectral profiles |
+| 7. CNN Architecture | Residual CNN with skip connections |
+| 8. Training Functions | Loss, optimiser, LR schedule, early stopping |
+| 9. Train CNN | Live epoch table + learning curves |
+| 10. Evaluation | Test set F1, mAP, per-class AP, PR curves |
+| 11. GradCAM | Spatial attention heatmaps |
+| 12. SHAP | Spectral band importance |
+| 13. Discussion | Results, limitations, conclusions |
 
 ---
 
 ## Key Design Decisions
 
-### Multi-label loss with class balancing
-`BCEWithLogitsLoss` with per-class `pos_weight` to penalise the model more for
-missing rare classes like Marine Debris.
+**Loss:** BCEWithLogitsLoss with pos_weight — rare classes penalised more when missed.
 
-### Confidence masking
-Pixels with `conf == 0` are zeroed out — only reliably annotated regions contribute to training.
+**Normalisation:** Per-channel z-score on training set only — no data leakage to val/test.
 
-### Normalisation
-Per-channel z-score normalisation computed on training set only (prevents data leakage).
+**Residual CNN:** Skip connections solve vanishing gradients. Downsamples 256×256 → 4×4 → pooled.
 
-### LR schedule
-Linear warmup (5 epochs) → cosine annealing. Prevents early instability and smoothly
-decays learning rate.
+**Augmentation:** Random flips, rotations, noise, cutout — band-agnostic (works for 11 bands).
 
-### Residual connections
-Skip connections in the CNN allow gradients to flow through deep layers, solving
-the vanishing gradient problem.
+**MLP excluded:** Flattened input of 720,896 features exceeded Apple Silicon GPU memory.
 
 ---
 
-## Hardware Notes
+## Hardware
 
-| Device | MLP Training | CNN Training |
-|--------|-------------|-------------|
-| Apple MPS GPU | ~10 mins | ~45 mins |
-| NVIDIA GPU | ~5 mins | ~20 mins |
-| CPU only | ~30 mins | ~3 hours |
-
-To check your device, run Cell 0 in the notebook.
+| Device | CNN Training Time |
+|--------|------------------|
+| Apple MPS (M1/M2/M3) | ~45–60 minutes |
+| NVIDIA GPU | ~20 minutes |
+| CPU only | ~3 hours |
 
 ---
 
-## Results (Example)
+## Results
 
-| Model | Macro F1 | Micro F1 | mAP |
-|-------|----------|----------|-----|
-| MLP Baseline | ~0.35 | ~0.50 | ~0.40 |
-| CNN | ~0.50 | ~0.65 | ~0.55 |
+| Metric | CNN |
+|--------|-----|
+| Macro F1 | 0.1954 |
+| Micro F1 | 0.2198 |
+| mAP | 0.1239 |
 
-*Actual results vary depending on number of training epochs and hardware.*
+Best class: Marine Water (AP = 0.630)
+Hardest classes: Dense Sargassum / Waves (AP = 0.036)
+
+Low scores on rare classes are expected — up to 19x imbalance between classes.
 
 ---
 
 ## References
 
-- Kikaki, K. et al. (2022). *MARIDA: A benchmark for Marine Debris detection from Sentinel-2 remote sensing data.* PLOS ONE. https://doi.org/10.1371/journal.pone.0262247
-- Selvaraju, R.R. et al. (2017). *Grad-CAM: Visual Explanations from Deep Networks via Gradient-based Localization.* ICCV.
-- Lundberg, S.M. & Lee, S.I. (2017). *A Unified Approach to Interpreting Model Predictions.* NeurIPS.
-- He, K. et al. (2016). *Deep Residual Learning for Image Recognition.* CVPR.
+- Kikaki et al. (2022). MARIDA: A benchmark for Marine Debris detection. PLOS ONE. https://doi.org/10.1371/journal.pone.0262247
+- Selvaraju et al. (2017). Grad-CAM: Visual Explanations from Deep Networks. ICCV.
+- Lundberg & Lee (2017). A Unified Approach to Interpreting Model Predictions. NeurIPS.
+- He et al. (2016). Deep Residual Learning for Image Recognition. CVPR.
