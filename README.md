@@ -95,9 +95,9 @@ jupyter notebook
 
 | Metric | Value |
 |--------|-------|
-| Macro F1 | 0.1954 |
-| Micro F1 | 0.2198 |
-| mAP | 0.1239 |
+| Macro F1 | 0.1908 |
+| Micro F1 | 0.2291 |
+| mAP | 0.1235 |
 
 Best class: Marine Water (AP = 0.630)
 Most challenging: Dense Sargassum and Waves (AP = 0.036)
