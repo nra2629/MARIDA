@@ -33,7 +33,7 @@ marida_1/
 ## Data
 
 The MARIDA dataset is publicly available at:
-https://zenodo.org/record/5823383
+https://zenodo.org/records/5151941
 
 After downloading, the folder will contain subfolders per scene like:
 ```
