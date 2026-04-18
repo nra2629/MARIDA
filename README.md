@@ -107,7 +107,3 @@ Most challenging: Dense Sargassum and Waves (AP = 0.036)
 Kikaki et al. (2022). MARIDA: A benchmark for Marine Debris detection. PLOS ONE. https://doi.org/10.1371/journal.pone.0262247
 
 Selvaraju et al. (2017). Grad-CAM: Visual Explanations from Deep Networks. ICCV.
-
-Lundberg and Lee (2017). A Unified Approach to Interpreting Model Predictions. NeurIPS.
-
-He et al. (2016). Deep Residual Learning for Image Recognition. CVPR.
