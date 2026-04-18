@@ -1,5 +1,5 @@
 # MARIDA: Marine Debris Detection from Sentinel-2 Satellite Imagery
-### Deep Learning with PyTorch — Multi-Label Image Classification
+### Deep Learning with PyTorch : Multi-Label Image Classification
 
 ## Project Overview
 
@@ -10,7 +10,7 @@ the European Space Agency's Sentinel-2 satellite.
 
 Given a 256×256 pixel satellite image patch with 11 spectral bands, the model predicts
 which of 15 ocean surface classes are present. This is a multi-label classification
-problem — a single patch can belong to multiple classes at the same time.
+problem ; a single patch can belong to multiple classes at the same time.
 
 The 15 classes are: Marine Debris, Dense Sargassum, Sparse Sargassum, Natural Organic
 Material, Ship, Clouds, Marine Water, Sediment-Laden Water, Foam, Turbid Water,
