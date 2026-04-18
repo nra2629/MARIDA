@@ -89,8 +89,7 @@ jupyter notebook
 | 9. Train CNN | Training with live progress |
 | 10. Evaluation | F1, mAP, per-class AP, PR curves |
 | 11. GradCAM | Where the model looks |
-| 12. SHAP | Which spectral bands matter |
-| 13. Discussion | Results and conclusions |
+| 12. Discussion | Results and conclusions |
 
 ## Results
 
